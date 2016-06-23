@@ -1,5 +1,4 @@
-require "omniauth/strava/version"
-require "omniauth/strategies/strava"
+require "omniauth/strava"
 
 module Omniauth
   module Strava
