@@ -7,14 +7,15 @@ require 'uri'
 module OmniAuth
   module Strategies
     class Strava < OmniAuth::Strategies::OAuth2
-      class NoAuthorizationCodeError < StandardError; end
+      class NoAuthorizationCodeError < StandardError;
+      end
 
       DEFAULT_SCOPE = 'email'
 
       option :client_options, {
-        :site => 'https://www.strava.com',
+        :site          => 'https://www.strava.com',
         :authorize_url => "https://www.strava.com/oauth/authorize",
-        :token_url => 'oauth/token'
+        :token_url     => 'oauth/token'
       }
 
       option :token_params, {
@@ -24,40 +25,41 @@ module OmniAuth
 
       option :access_token_options, {
         :header_format => 'OAuth %s',
-        :param_name => 'access_token'
+        :param_name    => 'access_token'
       }
 
       option :authorize_options, [:scope, :display, :auth_type]
 
-      uid { raw_info['id'] }
+      uid { raw_info['athlete']['id'] }
 
       info do
+        _raw_info = raw_info['athlete']
         prune!({
-          'nickname' => raw_info['username'],
-          'email' => raw_info['email'],
-          'name' => raw_info['name'],
-          'first_name' => raw_info['firstname'],
-          'last_name' => raw_info['lastname'],
-          'profile' => raw_info['profile'],
-          'profile_medium' => raw_info['profile_medium'],
-          'follower_count' => raw_info['follower_count'],
-          'friend_count' => raw_info['friend_count'],
-          'mutual_friend_count' => raw_info['mutual_friend_count'],
-          'country' => raw_info['country'],
-          'state' => raw_info['state'],
-          'city' => raw_info['city']
+                 'nickname'            => _raw_info['username'],
+                 'email'               => _raw_info['email'],
+                 'name'                => _raw_info['name'],
+                 'first_name'          => _raw_info['firstname'],
+                 'last_name'           => _raw_info['lastname'],
+                 'profile'             => _raw_info['profile'],
+                 'profile_medium'      => _raw_info['profile_medium'],
+                 'follower_count'      => _raw_info['follower_count'],
+                 'friend_count'        => _raw_info['friend_count'],
+                 'mutual_friend_count' => _raw_info['mutual_friend_count'],
+                 'country'             => _raw_info['country'],
+                 'state'               => _raw_info['state'],
+                 'city'                => _raw_info['city']
 
-        })
+               })
       end
 
       extra do
-        hash = {}
+        hash             = {}
         hash['raw_info'] = raw_info unless skip_info?
         prune! hash
       end
 
       def raw_info
-        @raw_info ||= access_token || {}
+        @raw_info ||= access_token.to_hash || {}
       end
 
       def info_options
@@ -65,7 +67,7 @@ module OmniAuth
         params.merge!({:fields => (options[:info_fields] || 'name,email')})
         params.merge!({:locale => options[:locale]}) if options[:locale]
 
-        { :params => params }
+        {:params => params}
       end
 
       def callback_phase
@@ -91,7 +93,7 @@ module OmniAuth
       end
 
       def access_token_options
-        options.access_token_options.inject({}) { |h,(k,v)| h[k.to_sym] = v; h }
+        options.access_token_options.inject({}) { |h, (k, v)| h[k.to_sym] = v; h }
       end
 
       # You can pass +display+, +scope+, or +auth_type+ params to the auth request, if you need to set them dynamically.
@@ -106,7 +108,7 @@ module OmniAuth
             end
           end
 
-          params[:scope] ||= DEFAULT_SCOPE
+          params[:scope]           ||= DEFAULT_SCOPE
           params[:approval_prompt] ||= 'force'
         end
       end
@@ -137,18 +139,18 @@ module OmniAuth
         if request.params.key?('code')
           yield
         elsif code_from_signed_request = signed_request_from_cookie && signed_request_from_cookie['code']
-          request.params['code'] = code_from_signed_request
+          request.params['code']                            = code_from_signed_request
           @authorization_code_from_signed_request_in_cookie = true
           # NOTE The code from the signed fbsr_XXX cookie is set by the FB JS SDK will confirm that the identity of the
           #      user contained in the signed request matches the user loading the app.
-          original_provider_ignores_state = options.provider_ignores_state
-          options.provider_ignores_state = true
+          original_provider_ignores_state                   = options.provider_ignores_state
+          options.provider_ignores_state                    = true
           begin
             yield
           ensure
             request.params.delete('code')
             @authorization_code_from_signed_request_in_cookie = false
-            options.provider_ignores_state = original_provider_ignores_state
+            options.provider_ignores_state                    = original_provider_ignores_state
           end
         else
           raise NoAuthorizationCodeError, 'must pass either a `code` (via URL or by an `fbsr_XXX` signed request cookie)'
@@ -164,14 +166,14 @@ module OmniAuth
 
       def image_url(uid, options)
         uri_class = options[:secure_image_url] ? URI::HTTPS : URI::HTTP
-        site_uri = URI.parse(client.site)
-        url = uri_class.build({:host => site_uri.host, :path => "#{site_uri.path}/#{uid}/picture"})
+        site_uri  = URI.parse(client.site)
+        url       = uri_class.build({:host => site_uri.host, :path => "#{site_uri.path}/#{uid}/picture"})
 
-        query = if options[:image_size].is_a?(String) || options[:image_size].is_a?(Symbol)
-          { :type => options[:image_size] }
-        elsif options[:image_size].is_a?(Hash)
-          options[:image_size]
-        end
+        query     = if options[:image_size].is_a?(String) || options[:image_size].is_a?(Symbol)
+                      {:type => options[:image_size]}
+                    elsif options[:image_size].is_a?(Hash)
+                      options[:image_size]
+                    end
         url.query = Rack::Utils.build_query(query) if query
 
         url.to_s
