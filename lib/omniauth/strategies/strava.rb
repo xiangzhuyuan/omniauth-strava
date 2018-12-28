@@ -10,7 +10,7 @@ module OmniAuth
       class NoAuthorizationCodeError < StandardError;
       end
 
-      DEFAULT_SCOPE = 'email'
+      DEFAULT_SCOPE = 'profile:read_all'
 
       option :client_options, {
         :site          => 'https://www.strava.com',
