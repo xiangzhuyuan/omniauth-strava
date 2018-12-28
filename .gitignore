@@ -1,3 +1,4 @@
+example/Gemfile.lock
 *.gem
 .bundle
 .rspec
